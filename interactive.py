@@ -19,13 +19,13 @@ class Interactive:
             iter_count += 1
             while True:
                 if(self.child.before != ""):
-                    output = self.child.expect([pexpect.EOF, pexpect.TIMEOUT, await_message['question']], timeout=25)
+                    output = self.child.expect([pexpect.EOF, pexpect.TIMEOUT, await_message['question']], timeout=1)
                     if output == 0:
                         self.code = (f"""Fallo""")
                     elif output == 1:
-                        self.code = (f"""Tiempo de espera agotado para {await_message['question']} \n\n """)
+                        self.code = (f"""Tiempo de espera agotado - {await_message['question']} """)
                     else:
                         self.child.sendline(await_message['response'])
-                        self.code = (f"""Conectado -  """)
+                        self.code = (f"""Conectado""")
                         if(iter_count < len(self.await_messages)):
                             break
