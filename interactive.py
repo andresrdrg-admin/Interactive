@@ -3,11 +3,8 @@ import time
 import sys
 import os
 from multiprocessing import Process, Manager
-
-if platform.system() == "Windows":
-    import wexpect as pexpect
-else:
-    import pexpect
+from pexpect.popen_spawn import PopenSpawn
+import pexpect
     
     
 class Interactive:
@@ -22,7 +19,26 @@ class Interactive:
     
     def write_to_file(self, dir, message):
         try:
-            with open(dir, "a") as file:
+            if os.path.isfile(dir):
+                message = (str(message).split('$')[-1])[-200:]
+                with open(dir, "r") as file:
+                    lines = file.readlines()
+                
+                if len(lines) > 20:
+                    self.clean_to_file(dir, "...")
+            else:
+                lines = None
+
+            # Verificar si la última línea del archivo es igual a la nueva línea
+            if not lines or message != lines[-1].strip():
+                with open(dir, "a") as file:
+                    file.write(f"{message}\n")
+        except IOError:
+            print(f"No se pudo editar y guardar el archivo '{dir}'.")
+            
+    def clean_to_file(self, dir, message):
+        try:
+            with open(dir, "w") as file:
                 file.write(f"{message}\n")
         except IOError:
             print(f"No se pudo editar y guardar el archivo '{dir}'.")
@@ -38,12 +54,13 @@ class Interactive:
         file_log = f"{current_dir_logs}/{self.name_connection}.log"
         if(os.path.exists(file_log) == False):
             self.write_to_file(file_log, self.cmd)
-        
+        else:
+            self.clean_to_file(file_log, self.cmd)
         try:
             if platform.system() != "Windows":
                 self.child = pexpect.spawn('/bin/bash', ['-c', self.cmd], timeout=None)
             else:
-                self.child = pexpect.spawn('cmd.exe', ['/c', self.cmd], timeout=None)
+                self.child = pexpect.popen_spawn.PopenSpawn(f'cmd /c {self.cmd}', timeout=None)
             
             if self.await_messages != None:
                 iter_count = 0
@@ -64,7 +81,7 @@ class Interactive:
                         if output == 0:
                             self.code.value = f"Error : \"{self.child.before}\""
                             self.write_to_file(file_log, f"Error : \"{self.child.before}\"")
-                        elif output == 1:
+                        elif output == 1 and platform.system() != "Windows":
                             self.code.value = f"Tiempo de espera agotado : \"{self.child.before}\""
                             self.write_to_file(file_log, f"Tiempo de espera agotado : \"{self.child.before}\"")
                         else:
@@ -75,10 +92,9 @@ class Interactive:
                                 self.write_to_file(file_log, f" > \"{self.child.before}\"")
                                 break
                             
-                        time.sleep(3)
+                        time.sleep(5)
             else:
                 self.child.expect(pexpect.EOF)
-                
-        except pexpect.exceptions.ExceptionPexpect as e:
+        except pexpect.EOF as e:
             print(f"Error al ejecutar el comando: {e}")
         
