@@ -10,8 +10,8 @@ class InteractivePLink():
         self.sleep_executions = sleep_executions
         self.connections = Manager().dict()
     
-    def create_connection(self, name_connection, port_local, port_bridge, port_objetive,  trace_ips, bridge ="localhost"):
-        cmd = f"plink -L {port_local}:localhost:{port_bridge} "
+    def create_connection(self, name_connection, port_local, port_bridge, port_objetive, trace_ips, bridge ="localhost"):
+        cmd = f"plink -L {port_local}:{bridge}:{port_bridge} "
         await_messages = [
             {
                 "question": "Access granted. Press Return to begin session.",
